@@ -2,10 +2,11 @@ pipeline {
     agent any
 
     stages {
+
         stage('Build Backend Image') {
             steps {
                 sh '''
-                cd CC_LAB-6
+                cd CC_Lab6
                 docker rmi -f backend-app || true
                 docker build -t backend-app backend
                 '''
@@ -17,6 +18,7 @@ pipeline {
                 sh '''
                 docker network create app-network || true
                 docker rm -f backend1 backend2 || true
+
                 docker run -d --name backend1 --network app-network backend-app
                 docker run -d --name backend2 --network app-network backend-app
                 '''
@@ -28,15 +30,15 @@ pipeline {
                 sh '''
                 docker rm -f nginx-lb || true
 
-                # RUN ON SAFE PORT - FIX FOR WINDOWS HOME + WSL2
+                # Run on SAFE PORT for Windows Home + WSL2
                 docker run -d \
                   --name nginx-lb \
                   --network app-network \
                   -p 8081:80 \
                   nginx
 
-                # COPY THE CORRECT FILE (IMPORTANT)
-                docker cp CC_LAB-6/nginx/default.conf nginx-lb:/etc/nginx/conf.d/default.conf
+                # Copy the correct file from the repo folder
+                docker cp CC_Lab6/nginx/default.conf nginx-lb:/etc/nginx/conf.d/default.conf
 
                 docker exec nginx-lb nginx -s reload
                 '''
@@ -49,7 +51,7 @@ pipeline {
             echo 'Pipeline executed successfully. Open http://localhost:8081'
         }
         failure {
-            echo 'Pipeline failed. Check logs.'
+            echo 'Pipeline failed. Check console logs for errors.'
         }
     }
 }
