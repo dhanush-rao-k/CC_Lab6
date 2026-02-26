@@ -6,7 +6,7 @@ pipeline {
         stage('Build Backend Image') {
             steps {
                 sh '''
-                cd CC_Lab6
+                echo "Building backend image..."
                 docker rmi -f backend-app || true
                 docker build -t backend-app backend
                 '''
@@ -16,6 +16,7 @@ pipeline {
         stage('Deploy Backend Containers') {
             steps {
                 sh '''
+                echo "Deploying backend containers..."
                 docker network create app-network || true
                 docker rm -f backend1 backend2 || true
 
@@ -28,17 +29,18 @@ pipeline {
         stage('Deploy NGINX Load Balancer') {
             steps {
                 sh '''
+                echo "Deploying nginx load balancer..."
                 docker rm -f nginx-lb || true
 
-                # Run on SAFE PORT for Windows Home + WSL2
+                # IMPORTANT: USE PORT 8081 because Windows Home + WSL2 blocks 80
                 docker run -d \
                   --name nginx-lb \
                   --network app-network \
                   -p 8081:80 \
                   nginx
 
-                # Copy the correct file from the repo folder
-                docker cp CC_Lab6/nginx/default.conf nginx-lb:/etc/nginx/conf.d/default.conf
+                # COPY YOUR CONFIG CORRECTLY (NO SUBFOLDER)
+                docker cp nginx/default.conf nginx-lb:/etc/nginx/conf.d/default.conf
 
                 docker exec nginx-lb nginx -s reload
                 '''
@@ -48,10 +50,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline executed successfully. Open http://localhost:8081'
+            echo 'Pipeline executed successfully. Access the app at: http://localhost:8081'
         }
         failure {
-            echo 'Pipeline failed. Check console logs for errors.'
+            echo 'Pipeline failed. Check logs.'
         }
     }
 }
